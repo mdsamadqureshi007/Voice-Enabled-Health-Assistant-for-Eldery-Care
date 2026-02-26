@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareVoice - AI Powered Elderly Health Assistant</title>
+
+    <!-- React and ReactDOM CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Babel standalone for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Link to our vanilla CSS file -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function App() {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [theme, setTheme] = useState('dark');
+            const [activePage, setActivePage] = useState('dashboard');
+
+            // Theme Toggle
+            const toggleTheme = () => {
+                const newTheme = theme === 'light' ? 'dark' : 'light';
+                setTheme(newTheme);
+                document.documentElement.setAttribute('data-theme', newTheme);
+            };
+
+            // Mock Medicines State
+            const [medicines, setMedicines] = useState([
+                { id: 1, name: 'Aspirin', dosage: '1 Pill', time: '08:00 AM', status: 'pending' },
+                { id: 2, name: 'Metformin', dosage: '500mg', time: '01:00 PM', status: 'taken' },
+                { id: 3, name: 'Lisinopril', dosage: '10mg', time: '08:00 PM', status: 'missed' },
+            ]);
+
+            const missedCount = medicines.filter(m => m.status === 'missed').length;
+            const riskLevel = missedCount === 0 ? 'low' : missedCount < 2 ? 'medium' : 'high';
+
+            if (!isLoggedIn) {
+                return <Login onLogin={() => setIsLoggedIn(true)} toggleTheme={toggleTheme} theme={theme} />;
+            }
+
+            return (
+                <div className="app-container">
+                    <header className="header">
+                        <h1>🎙️ CareVoice</h1>
+                        <div className="header-controls">
+                            <span className={`badge ${riskLevel}-risk`}>
+                                {riskLevel === 'low' ? '✅' : riskLevel === 'medium' ? '⚠️' : '🚨'} {riskLevel.toUpperCase()} RISK
+                            </span>
+                            <button className="theme-toggle" onClick={toggleTheme}>
+                                {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+                            </button>
+                        </div>
+                    </header>
+
+                    <nav className="nav-bar">
+                        {['dashboard', 'medication', 'emergency', 'doctors', 'assistant', 'feedback', 'features'].map(page => (
+                            <button
+                                key={page}
+                                className={`nav-btn ${activePage === page ? 'active' : ''}`}
+                                onClick={() => setActivePage(page)}
+                            >
+                                {page.charAt(0).toUpperCase() + page.slice(1)}
+                            </button>
+                        ))}
+                    </nav>
+
+                    <main className="main-content">
+                        {activePage === 'dashboard' && <Dashboard setActivePage={setActivePage} medicines={medicines} riskLevel={riskLevel} />}
+                        {activePage === 'medication' && <Medication medicines={medicines} setMedicines={setMedicines} />}
+                        {activePage === 'emergency' && <Emergency />}
+                        {activePage === 'doctors' && <Doctors />}
+                        {activePage === 'assistant' && <Assistant />}
+                        {activePage === 'feedback' && <Feedback />}
+                        {activePage === 'features' && <Features />}
+                    </main>
+
+                    <footer style={{ textAlign: 'center', padding: '2rem', marginTop: 'auto', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>
+                            &copy; 2026 CareVoice Platform. A Student Demo Project for Elderly Health Management.
+                        </p>
+                        <p style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1rem', marginTop: '0.5rem' }}>
+                            Designed with ❤️ for Accessibility & Inclusion.
+                        </p>
+                    </footer>
+                </div>
+            );
+        }
+
+        // 1. Dashboard Component (Live Vitals Hub)
+        function Dashboard({ setActivePage, medicines, riskLevel }) {
+            const nextMed = medicines.find(m => m.status === 'pending') || medicines[0];
+
+            // Simulated Live Metrics
+            const [heartRate, setHeartRate] = useState(72);
+            const [hrTrend, setHrTrend] = useState('neutral');
+            const [bpSys, setBpSys] = useState(120);
+            const [bpDia, setBpDia] = useState(80);
+
+            useEffect(() => {
+                // Simulate heart rate fluctuating slightly every 3 seconds
+                const interval = setInterval(() => {
+                    const change = Math.floor(Math.random() * 5) - 2;
+                    setHeartRate(prev => {
+                        const newHR = prev + change;
+                        if (newHR > prev) setHrTrend('up');
+                        else if (newHR < prev) setHrTrend('down-good');
+                        else setHrTrend('neutral');
+                        return newHR > 100 ? 100 : newHR < 60 ? 60 : newHR;
+                    });
+                }, 3000);
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div>
+                    <div className="card glass" style={{ marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '2rem' }}>👋 Welcome back, Mr. Rajendra!</h2>
+                        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Real-Time Health Monitoring Active.</p>
+                    </div>
+
+                    {/* Vitals Live Hub */}
+                    <h3 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Live Health Vitals</h3>
+                    <div className="metrics-row">
+                        <div className="metric-card glass">
+                            <span className="pulse-bg">❤️</span>
+                            <div className="metric-header">
+                                Heart Rate
+                                <span className={`trend ${hrTrend}`}>
+                                    {hrTrend === 'up' ? '📈 Increasing' : hrTrend === 'down-good' ? '📉 Dropping' : '⏱️ Stable'}
+                                </span>
+                            </div>
+                            <div className="metric-value-container">
+                                <span className="metric-value">{heartRate}</span>
+                                <span className="metric-unit">bpm</span>
+                            </div>
+                            <div style={{ marginTop: '1rem', background: '#333', height: '4px', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ background: 'var(--accent)', height: '100%', width: `${heartRate}%`, transition: 'width 1s' }} />
+                            </div>
+                        </div>
+
+                        <div className="metric-card glass">
+                            <div className="metric-header" style={{ color: 'var(--info)' }}>
+                                Blood Pressure
+                                <span className="trend neutral">⏱️ Healthy</span>
+                            </div>
+                            <div className="metric-value-container">
+                                <span className="metric-value" style={{ color: 'var(--info)' }}>{bpSys}<span style={{ fontSize: '2rem', color: 'var(--text-muted)' }}>/</span>{bpDia}</span>
+                                <span className="metric-unit">mmHg</span>
+                            </div>
+                            <div style={{ marginTop: '1rem', background: '#333', height: '4px', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ background: 'var(--info)', height: '100%', width: '60%', transition: 'width 1s' }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="dashboard-grid">
+                        <div className="card glass action-card" onClick={() => setActivePage('medication')} style={{ borderTop: '4px solid var(--primary)' }}>
+                            <span className="icon-large">💊</span>
+                            <h2>Next Medication</h2>
+                            {nextMed ? (
+                                <div>
+                                    <h3 style={{ fontSize: '1.5rem' }}>{nextMed.name} ({nextMed.dosage})</h3>
+                                    <div style={{ padding: '0.8rem 1.5rem', background: 'var(--primary)', color: 'white', borderRadius: '30px', fontWeight: 'bold', marginTop: '1rem', display: 'inline-block' }}>
+                                        ⏰ {nextMed.time}
+                                    </div>
+                                </div>
+                            ) : <p>All caught up!</p>}
+                        </div>
+
+                        <div className="card glass action-card" style={{ borderTop: '4px solid var(--accent)', background: 'linear-gradient(145deg, rgba(244, 63, 94, 0.1), transparent)' }} onClick={() => setActivePage('emergency')}>
+                            <span className="icon-large">🚑</span>
+                            <h2 style={{ color: 'var(--accent)' }}>Emergency SOS</h2>
+                            <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Dispatch Ambulance Immediately</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 2. Editable Medication Management Component
+        function Medication({ medicines, setMedicines }) {
+            const [formData, setFormData] = useState({ name: '', dosage: '', time: '' });
+            const [isEditing, setIsEditing] = useState(false);
+            const [editId, setEditId] = useState(null);
+            const [showForm, setShowForm] = useState(false);
+
+            const updateStatus = (id, status) => {
+                setMedicines(medicines.map(m => m.id === id ? { ...m, status } : m));
+            };
+
+            const deleteMed = (id) => {
+                setMedicines(medicines.filter(m => m.id !== id));
+            };
+
+            const handleEdit = (med) => {
+                setFormData({ name: med.name, dosage: med.dosage, time: med.time });
+                setEditId(med.id);
+                setIsEditing(true);
+                setShowForm(true);
+            };
+
+            const saveMedication = () => {
+                if (!formData.name || !formData.dosage || !formData.time) {
+                    alert("Please fill all fields.");
+                    return;
+                }
+
+                if (isEditing) {
+                    setMedicines(medicines.map(m => m.id === editId ? { ...m, ...formData } : m));
+                } else {
+                    setMedicines([...medicines, { id: Date.now(), ...formData, status: 'pending' }]);
+                }
+
+                setFormData({ name: '', dosage: '', time: '' });
+                setShowForm(false);
+                setIsEditing(false);
+                setEditId(null);
+            };
+
+            return (
+                <div className="card glass">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h2>Medication Schedule</h2>
+                        <button className="btn-action" onClick={() => setShowForm(!showForm)}>
+                            {showForm ? '❌ Cancel' : '➕ Add Medicine'}
+                        </button>
+                    </div>
+
+                    {showForm && (
+                        <div style={{ padding: '1.5rem', background: 'var(--surface-solid)', borderRadius: '16px', marginBottom: '2rem', border: '1px solid var(--primary)' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>{isEditing ? 'Edit Medication' : 'Add New Medication'}</h3>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <input className="gemini-input" placeholder="Medicine Name (e.g. Advil)" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                <input className="gemini-input" placeholder="Dosage (e.g. 2 Pills)" value={formData.dosage} onChange={e => setFormData({ ...formData, dosage: e.target.value })} />
+                                <input className="gemini-input" type="time" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} />
+                                <button className="btn-action" onClick={saveMedication}>{isEditing ? 'Save Changes' : 'Save Medicine'}</button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="med-list">
+                        {medicines.map(med => (
+                            <div key={med.id} className={`med-item ${med.status}`}>
+                                <div className="med-info">
+                                    <h3>{med.name} - {med.dosage}</h3>
+                                    <p>⏰ {med.time}</p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    {med.status === 'pending' && (
+                                        <>
+                                            <button className="btn-action btn-taken" onClick={() => updateStatus(med.id, 'taken')}>Taken ✅</button>
+                                            <button className="btn-action btn-missed" onClick={() => updateStatus(med.id, 'missed')}>Missed ❌</button>
+                                        </>
+                                    )}
+                                    {med.status !== 'pending' && (
+                                        <span className={`badge ${med.status === 'taken' ? 'low-risk' : 'high-risk'}`} style={{ fontSize: '1.2rem', padding: '0.8rem 1.5rem', marginRight: '1rem' }}>
+                                            {med.status.toUpperCase()} {med.status === 'taken' ? '✅' : '❌'}
+                                        </span>
+                                    )}
+                                    <button style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }} onClick={() => handleEdit(med)} title="Edit">✏️</button>
+                                    <button style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', opacity: 0.8 }} onClick={() => deleteMed(med.id)} title="Delete">🗑️</button>
+                                </div>
+                            </div>
+                        ))}
+                        {medicines.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No medications currently scheduled.</p>}
+                    </div>
+                </div>
+            );
+        }
+
+        // 3. Real Calling Emergency Response Component
+        function Emergency() {
+            const [status, setStatus] = useState('idle'); // idle, calling_ambulance, connected, dispatched, calling_family
+            const [gps, setGps] = useState(null);
+
+            const grabGPS = () => {
+                if (navigator.geolocation && !gps) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                        (err) => setGps({ error: true })
+                    );
+                }
+            };
+
+            const activateSOS = () => {
+                setStatus('calling_ambulance');
+                grabGPS();
+                setTimeout(() => {
+                    setStatus('connected');
+                    setTimeout(() => setStatus('dispatched'), 4000);
+                }, 3000);
+            };
+
+            const activateFamilyAlert = () => {
+                setStatus('calling_family');
+                grabGPS();
+                // Simulate SMS sent then back to normal state or hold state
+                setTimeout(() => {
+                    alert("✅ LIVE ALERT SENT: Automated SMS with your Live GPS Location has successfully been dispatched to: Son (Rohan - 9876543210)");
+                    setStatus('idle');
+                }, 2000);
+            };
+
+            return (
+                <div style={{ textAlign: 'center', paddingTop: '2rem' }}>
+                    <h1>Emergency Dispatch</h1>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1.2rem' }}>Calling ambulance will broadcast your GPS locally immediately.</p>
+
+                    {status === 'idle' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center' }}>
+                            <div className="btn-emergency-container" style={{ padding: '0' }}>
+                                <button className="btn-emergency" onClick={activateSOS}>
+                                    Call 108
+                                    <span style={{ fontSize: '1rem', fontWeight: '500', marginTop: '0.5rem', opacity: 0.8 }}>TAP TO CALL AMBULANCE</span>
+                                </button>
+                            </div>
+
+                            <h3 style={{ color: 'var(--text-muted)' }}>OR</h3>
+
+                            <button
+                                className="btn-action"
+                                onClick={activateFamilyAlert}
+                                style={{
+                                    background: 'var(--info)',
+                                    padding: '1.5rem 3rem',
+                                    fontSize: '1.3rem',
+                                    borderRadius: '30px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.5rem',
+                                    alignItems: 'center',
+                                    boxShadow: '0 8px 25px rgba(59, 130, 246, 0.4)'
+                                }}
+                            >
+                                <span>📱 Alert Family Members</span>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Sends SMS with your GPS location</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {status === 'calling_family' && (
+                        <div className="card glass pulse-bg" style={{ maxWidth: 500, margin: '0 auto', border: '4px solid var(--info)', padding: '4rem 2rem', position: 'relative' }}>
+                            <h2 style={{ fontSize: '2rem', color: 'var(--info)', animation: 'pulse-mic 1s infinite' }}>📱 Contacting Family...</h2>
+                            <p style={{ fontSize: '1.2rem', marginTop: '1rem' }}>Structuring SMS with live GPS payload...</p>
+                        </div>
+                    )}
+
+                    {status === 'calling_ambulance' && (
+                        <div className="card glass pulse-bg" style={{ maxWidth: 500, margin: '0 auto', border: '4px solid var(--warning)', padding: '4rem 2rem', position: 'relative' }}>
+                            <h2 style={{ fontSize: '2.5rem', color: 'var(--warning)', animation: 'pulse-mic 1s infinite' }}>📞 Calling Ambulance...</h2>
+                            <p style={{ fontSize: '1.2rem', marginTop: '1rem' }}>Dialing Emergency Services...</p>
+                        </div>
+                    )}
+
+                    {status === 'connected' && (
+                        <div className="card glass" style={{ maxWidth: 500, margin: '0 auto', border: '4px solid var(--info)', padding: '4rem 2rem' }}>
+                            <h2 style={{ fontSize: '2.5rem', color: 'var(--info)' }}>🗣️ Connected.</h2>
+                            <p style={{ fontSize: '1.4rem', marginTop: '1rem' }}><em>"108 Emergency, how can we help? We are locating your GPS..."</em></p>
+                        </div>
+                    )}
+
+                    {status === 'dispatched' && (
+                        <div className="card glass" style={{ maxWidth: 700, margin: '0 auto', borderTop: '6px solid var(--accent)' }}>
+                            <h2 style={{ color: 'var(--accent)', fontSize: '2.5rem' }}>🚑 Ambulance Dispatched!</h2>
+                            <p style={{ fontSize: '1.4rem', margin: '1.5rem 0' }}>An automated SMS was also sent to: <strong style={{ color: 'var(--primary)' }}>Son (9876543210)</strong></p>
+
+                            <div className="glass" style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', background: 'rgba(0,0,0,0.05)', borderRadius: '16px', border: '2px dashed var(--border)' }}>
+                                {gps?.error ? "Live GPS Denied - Triangulating Cellular Base Station..." : gps ? `Live GPS Locked: Lat ${gps.lat.toFixed(4)}, Lng ${gps.lng.toFixed(4)}` : 'Acquiring GPS Signal...'}
+                            </div>
+                            <button className="btn-action" style={{ marginTop: '2rem', width: '100%', background: 'var(--success)' }} onClick={() => setStatus('idle')}>Hang Up & Acknowledge</button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 4. Doctors Component (Unchanged)
+        function Doctors() {
+            const mockPlaces = [
+                { name: 'City Central Hospital', role: 'Hospital', distance: '1.2 km', open: true, rating: 4.8 },
+                { name: 'Dr. Sharma Clinic', role: 'Cardiology Specialist', distance: '2.5 km', open: true, rating: 4.5 },
+                { name: 'Apollo Pharmacy', role: 'Pharmacy & Supplies', distance: '0.5 km', open: false, rating: 4.2 },
+            ];
+            return (
+                <div className="card glass">
+                    <h2>Nearby Medical Support</h2>
+                    <p style={{ color: 'var(--text-muted)' }}>Live mock integration with Google Places.</p>
+                    <div className="dashboard-grid" style={{ marginTop: '1.5rem' }}>
+                        {mockPlaces.map((p, i) => (
+                            <div key={i} className="card glass" style={{ borderTop: `6px solid ${p.open ? 'var(--success)' : 'var(--accent)'}` }}>
+                                <h3 style={{ fontSize: '1.6rem' }}>{p.name}</h3>
+                                <p style={{ color: 'var(--info)', fontWeight: '700' }}>{p.role}</p>
+                                <p>⭐ {p.rating}</p>
+                                <p>📍 {p.distance}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // 5. Smarter AI Assistant (Persistent Key & Continuous Audio Fixed)
+        function Assistant() {
+            const [messages, setMessages] = useState([
+                { text: "Hello! I am CareVoice. Click the mic and speak. I'll automatically reply and then keep listening!", sender: "bot" }
+            ]);
+            const [input, setInput] = useState('');
+
+            // Audio State Management
+            const [isRecording, setIsRecording] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const isRecordingRef = useRef(false);
+            const recognitionRef = useRef(null);
+
+            const [userLang, setUserLang] = useState('en-US');
+
+            // Load and Save API Key using LocalStorage
+            const [apiKey, setApiKey] = useState(() => localStorage.getItem('carevoice_api_key') || '');
+
+            useEffect(() => {
+                localStorage.setItem('carevoice_api_key', apiKey);
+            }, [apiKey]);
+
+            const scrollRef = useRef(null);
+            useEffect(() => {
+                if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }, [messages]);
+
+            const speakResponse = (text) => {
+                if ('speechSynthesis' in window) {
+                    setIsSpeaking(true);
+                    // Pause microphone temporarily so it doesn't hear itself!
+                    if (recognitionRef.current && isRecordingRef.current) {
+                        try { recognitionRef.current.stop(); } catch (e) { }
+                    }
+
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = userLang;
+
+                    utterance.onend = () => {
+                        setIsSpeaking(false);
+                        // Resume microphone after finishing speaking!
+                        if (isRecordingRef.current && recognitionRef.current) {
+                            try { recognitionRef.current.start(); } catch (e) { }
+                        }
+                    };
+
+                    utterance.onerror = () => {
+                        setIsSpeaking(false);
+                        if (isRecordingRef.current && recognitionRef.current) {
+                            try { recognitionRef.current.start(); } catch (e) { }
+                        }
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const fetchGeminiResponse = async (userText) => {
+                if (!apiKey || apiKey.trim() === '') {
+                    setTimeout(() => {
+                        const err = "Error: No Gemini API key saved! Please paste it into the secure box above.";
+                        setMessages(prev => [...prev.filter(m => !m.isLoading), { text: err, sender: "bot" }]);
+                        speakResponse(err);
+                    }, 500);
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            system_instruction: { parts: { text: "You are CareVoice, an empathetic AI health assistant for elderly patients. Provide concise, simple advice. Never replace professional diagnosis. Answer entirely in the language the user speaks. Only say 1 or 2 small sentences." } },
+                            contents: [{ parts: [{ text: userText }] }]
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('API Error');
+                    const data = await response.json();
+                    const botResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble thinking, please try again.";
+
+                    setMessages(prev => [...prev.filter(m => !m.isLoading), { text: botResponse, sender: "bot" }]);
+                    speakResponse(botResponse);
+
+                } catch (error) {
+                    setMessages(prev => [...prev.filter(m => !m.isLoading), { text: "Network error with Gemini API.", sender: "bot" }]);
+                }
+            };
+
+            const handleSend = (userText = input) => {
+                if (!userText.trim()) return;
+                setMessages(prev => [...prev, { text: userText, sender: "user" }, { text: "Thinking...", sender: "bot", isLoading: true }]);
+                setInput('');
+                fetchGeminiResponse(userText);
+            };
+
+            const toggleListen = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    alert("Speech recognition not supported in this browser.");
+                    return;
+                }
+
+                // Toggle logic for continuous audio capture
+                if (isRecordingRef.current) {
+                    if (recognitionRef.current) recognitionRef.current.stop();
+                    isRecordingRef.current = false;
+                    setIsRecording(false);
+                    return;
+                }
+
+                const recognition = new SpeechRecognition();
+                recognition.lang = userLang;
+                recognition.interimResults = false;
+
+                // Stop continuous so it naturally pauses exactly when the user finishes a sentence
+                recognition.continuous = false;
+
+                recognition.onstart = () => {
+                    isRecordingRef.current = true;
+                    setIsRecording(true);
+                };
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    handleSend(transcript);
+                };
+                recognition.onerror = (e) => {
+                    if (e.error === 'not-allowed') {
+                        alert("Microphone permission denied! Please allow access.");
+                        isRecordingRef.current = false;
+                        setIsRecording(false);
+                    }
+                };
+                recognition.onend = () => {
+                    // Automatically restart listening ONLY if we aren't currently speaking and we still want to record
+                    if (isRecordingRef.current && !isSpeaking) {
+                        try { recognition.start(); } catch (e) { }
+                    }
+                };
+
+                recognitionRef.current = recognition;
+                recognition.start();
+            };
+
+            return (
+                <div className="card glass chat-container">
+                    <div className="gemini-bar" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid var(--info)' }}>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ marginBottom: '0.4rem', color: 'var(--info)' }}>Secure Gemini API Connection 🔒</h4>
+                            <input
+                                className="gemini-input"
+                                type="password"
+                                style={{ width: '100%' }}
+                                placeholder="Paste API Key (Saves automatically to browser)..."
+                                value={apiKey}
+                                onChange={e => setApiKey(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <h4 style={{ marginBottom: '0.4rem', color: 'transparent' }}>Language</h4>
+                            <select
+                                className="gemini-select"
+                                value={userLang}
+                                onChange={e => {
+                                    setUserLang(e.target.value);
+                                    if (isRecordingRef.current && recognitionRef.current) {
+                                        recognitionRef.current.stop();
+                                    }
+                                }}
+                            >
+                                <option value="en-US">🗣️ English</option>
+                                <option value="hi-IN">🗣️ Hindi</option>
+                                <option value="te-IN">🗣️ Telugu</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="chat-history" ref={scrollRef}>
+                        {messages.map((m, i) => (
+                            <div key={i} className={`chat-msg ${m.sender}`} style={{ opacity: m.isLoading ? 0.6 : 1 }}>
+                                {m.text}
+                            </div>
+                        ))}
+                        {isSpeaking && (
+                            <div className="chat-msg bot pulse-bg" style={{ color: 'var(--info)', fontSize: '1rem' }}>🔊 Reading answer aloud...</div>
+                        )}
+                    </div>
+                    <div className="chat-input-area">
+                        <button className={`btn-mic ${isRecording && !isSpeaking ? 'recording' : ''}`} onClick={toggleListen} title="Voice Input" style={{ background: isRecording ? 'var(--accent)' : 'var(--primary)' }}>
+                            {isRecording ? '🛑' : '🎙️'}
+                        </button>
+                        <input
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSend()}
+                            placeholder={isSpeaking ? "Waiting for AI to finish talking..." : isRecording ? `Listening actively in ${userLang}. Speak now...` : `Type or click Mic to start continuous listening...`}
+                            disabled={isSpeaking}
+                        />
+                        <button className="btn-action" onClick={() => handleSend()} disabled={isSpeaking}>Send</button>
+                    </div>
+                </div>
+            );
+        }
+
+        // 6. Feedback & Ratings
+        function Feedback() {
+            const [rating, setRating] = useState(0);
+            const [submitted, setSubmitted] = useState(false);
+
+            return (
+                <div className="card glass" style={{ maxWidth: 800, margin: '2rem auto', textAlign: 'center', padding: '4rem 2rem' }}>
+                    <h2 style={{ fontSize: '2.5rem' }}>How did CareVoice do?</h2>
+                    {!submitted ? (
+                        <>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: '4rem', cursor: 'pointer', margin: '3rem 0' }}>
+                                {[1, 2, 3, 4, 5].map(star => <span key={star} onClick={() => setRating(star)} style={{ color: star <= rating ? 'var(--warning)' : 'var(--border)' }}>★</span>)}
+                            </div>
+                            <button className="btn-action" onClick={() => rating > 0 ? setSubmitted(true) : alert('Select a rating')} disabled={!rating}>Submit Secure Feedback</button>
+                        </>
+                    ) : (
+                        <h3 style={{ color: 'var(--success)' }}>🎉 Thank you for your feedback! Average: 4.9 🌟</h3>
+                    )}
+                </div>
+            );
+        }
+
+        // 8. Login Component
+        function Login({ onLogin, toggleTheme, theme }) {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                onLogin();
+            };
+
+            return (
+                <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '2rem', right: '2rem' }}>
+                        <button className="theme-toggle" onClick={toggleTheme}>
+                            {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+                        </button>
+                    </div>
+
+                    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                        <h1 style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎙️ CareVoice</h1>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.4rem' }}>AI Powered Elderly Health Assistant</p>
+                    </div>
+
+                    <div className="card glass" style={{ maxWidth: '450px', width: '100%', margin: '0 auto', padding: '3rem 2rem' }}>
+                        <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem', color: 'var(--primary)' }}>Secure Login</h2>
+
+                        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.8rem', color: 'var(--text-muted)', fontSize: '1.1rem' }}>Phone or Email ID</label>
+                                <input
+                                    className="gemini-input"
+                                    type="text"
+                                    style={{ width: '100%', boxSizing: 'border-box' }}
+                                    placeholder="e.g. 9876543210"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.8rem', color: 'var(--text-muted)', fontSize: '1.1rem' }}>Password</label>
+                                <input
+                                    className="gemini-input"
+                                    type="password"
+                                    style={{ width: '100%', boxSizing: 'border-box' }}
+                                    placeholder="Enter your password..."
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <button className="btn-action" type="submit" style={{ marginTop: '1.5rem', width: '100%', fontSize: '1.4rem', padding: '1rem' }}>
+                                Sign In
+                            </button>
+                        </form>
+
+                        <div style={{ textAlign: 'center', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>Demo Access Granted Automatically</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 7. Features Page
+        function Features() {
+            const featuresList = [
+                { icon: '🎙️', title: 'Continuous Voice AI', desc: 'A wake-word free, continuous listening assistant powered by Gemini 2.5.' },
+                { icon: '❤️', title: 'Live Vitals Monitoring', desc: 'Real-time simulated tracking for Heart Rate and Blood Pressure.' },
+                { icon: '🚨', title: 'Emergency SOS', desc: 'One-tap realistic ambulance dispatch simulator with live GPS capabilities.' },
+                { icon: '💊', title: 'Medication Manager', desc: 'Fully editable medication schedules and alarms that update your risk profile.' },
+                { icon: '🏥', title: 'Local Medical Support', desc: 'Mocks Google Maps APIs to pull live data for nearest pharmacies and hospitals.' },
+                { icon: '🌐', title: 'Multi-Lingual', desc: 'Speak naturally in English, Hindi, or Telugu and it talks back in that language.' }
+            ];
+
+            return (
+                <div className="card glass">
+                    <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '2rem' }}>Platform Features</h2>
+                    <div className="dashboard-grid">
+                        {featuresList.map((f, i) => (
+                            <div key={i} className="card glass" style={{ borderLeft: '4px solid var(--info)' }}>
+                                <span style={{ fontSize: '3rem' }}>{f.icon}</span>
+                                <h3 style={{ fontSize: '1.4rem', margin: '1rem 0 0.5rem 0', color: 'var(--primary)' }}>{f.title}</h3>
+                                <p style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
